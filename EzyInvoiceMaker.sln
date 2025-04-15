@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EzyInvoiceMaker", "EzyInvoiceMaker\EzyInvoiceMaker.csproj", "{2383BF38-E6AA-41D3-BA44-1F127A13B614}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+		exportMac|Any CPU = exportMac|Any CPU
+		exportWin|Any CPU = exportWin|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2383BF38-E6AA-41D3-BA44-1F127A13B614}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2383BF38-E6AA-41D3-BA44-1F127A13B614}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2383BF38-E6AA-41D3-BA44-1F127A13B614}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2383BF38-E6AA-41D3-BA44-1F127A13B614}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2383BF38-E6AA-41D3-BA44-1F127A13B614}.exportMac|Any CPU.ActiveCfg = exportMac|Any CPU
+		{2383BF38-E6AA-41D3-BA44-1F127A13B614}.exportMac|Any CPU.Build.0 = exportMac|Any CPU
+		{2383BF38-E6AA-41D3-BA44-1F127A13B614}.exportWin|Any CPU.ActiveCfg = exportWin|Any CPU
+		{2383BF38-E6AA-41D3-BA44-1F127A13B614}.exportWin|Any CPU.Build.0 = exportWin|Any CPU
+	EndGlobalSection
+EndGlobal
