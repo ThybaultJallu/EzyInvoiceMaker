@@ -32,13 +32,12 @@ public class ExcelProcessor
         }
     }
 
-    public void CreateExcelFile(string destinationPath, IEnumerable<IXLRow> rows, string invoiceMonth,
-        string invoiceYear, string trigram = "TRIGRAMMEINTROUVABLE")
+    public void CreateExcelFile(string destinationPath, IEnumerable<IXLRow> rows, string invoiceMonth, string invoiceYear, string trigram = "TRIGRAMMEINTROUVABLE")
     {
         Console.WriteLine($"Création du fichier pour la valeur : {trigram}");
         using (var destinationWorkbook = new XLWorkbook())
         {
-            var destinationWorksheet = destinationWorkbook.Worksheets.Add("Résultats");
+            var destinationWorksheet = destinationWorkbook.Worksheets.Add($"Facture_{invoiceMonth}_{invoiceYear}");
 
             var rowsList = rows.ToList();
             IXLRow headerRow = rowsList.FirstOrDefault();
@@ -52,67 +51,68 @@ public class ExcelProcessor
                 foreach (var cell in row.Cells())
                 {
                     destinationWorksheet.Cell(currentRowIdx, columnIdx).Value = cell.Value;
+                    
+                    
+                    if (columnIdx >= 26 && columnIdx <= 31 && cell.Value.IsNumber)
+                    {
+                        // Format monétaire euro pour els colonnes 26 à 31 qui sont les montants a payer
+                        destinationWorksheet.Cell(currentRowIdx, columnIdx).Style.NumberFormat.Format = "#,##0.00 €";
+                    }
+                    // On bloque a deux chiffres après la virgule pour le reste
+                    else if (cell.Value.IsNumber)
+                    {
+                        double numValue = cell.Value.GetNumber();
+                        if (Math.Abs(numValue - Math.Round(numValue)) < double.Epsilon)
+                        {
+                            // nb entier
+                            destinationWorksheet.Cell(currentRowIdx, columnIdx).Style.NumberFormat.Format = "0";
+                        }
+                        else
+                        {
+                            // nb reel
+                            destinationWorksheet.Cell(currentRowIdx, columnIdx).Style.NumberFormat.Format = "0.00";
+                        }
+                    }
 
                     // Style pour l'en-tête
                     if (row == headerRow)
                     {
-                        destinationWorksheet.Cell(currentRowIdx, columnIdx).Style.Fill.BackgroundColor =
-                            XLColor.FromHtml("#277aa1");
+                        destinationWorksheet.Cell(currentRowIdx, columnIdx).Style.Fill.BackgroundColor = XLColor.FromHtml("#277aa1");
                         destinationWorksheet.Cell(currentRowIdx, columnIdx).Style.Font.FontColor = XLColor.White;
                         destinationWorksheet.Cell(currentRowIdx, columnIdx).Style.Font.Bold = true;
-                        destinationWorksheet.Cell(currentRowIdx, columnIdx).Style.Alignment.Horizontal =
-                            XLAlignmentHorizontalValues.Center;
-                        destinationWorksheet.Cell(currentRowIdx, columnIdx).Style.Alignment.Vertical =
-                            XLAlignmentVerticalValues.Center;
-                        destinationWorksheet.Cell(currentRowIdx, columnIdx).Style.Border.TopBorder =
-                            XLBorderStyleValues.Thin;
-                        destinationWorksheet.Cell(currentRowIdx, columnIdx).Style.Border.LeftBorder =
-                            XLBorderStyleValues.Thin;
-                        destinationWorksheet.Cell(currentRowIdx, columnIdx).Style.Border.RightBorder =
-                            XLBorderStyleValues.Thin;
-                        destinationWorksheet.Cell(currentRowIdx, columnIdx).Style.Border.BottomBorder =
-                            XLBorderStyleValues.Thin;
+                        destinationWorksheet.Cell(currentRowIdx, columnIdx).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                        destinationWorksheet.Cell(currentRowIdx, columnIdx).Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                        destinationWorksheet.Cell(currentRowIdx, columnIdx).Style.Border.TopBorder = XLBorderStyleValues.Thin;
+                        destinationWorksheet.Cell(currentRowIdx, columnIdx).Style.Border.LeftBorder = XLBorderStyleValues.Thin;
+                        destinationWorksheet.Cell(currentRowIdx, columnIdx).Style.Border.RightBorder = XLBorderStyleValues.Thin;
+                        destinationWorksheet.Cell(currentRowIdx, columnIdx).Style.Border.BottomBorder = XLBorderStyleValues.Thin;
                     }
-                    else
+                    else // style du reste 
                     {
-                        // Style pour les lignes de données
-                        destinationWorksheet.Cell(currentRowIdx, columnIdx).Style.Alignment.Horizontal =
-                            XLAlignmentHorizontalValues.Center;
-                        destinationWorksheet.Cell(currentRowIdx, columnIdx).Style.Alignment.Vertical =
-                            XLAlignmentVerticalValues.Center;
-                        destinationWorksheet.Cell(currentRowIdx, columnIdx).Style.Border.LeftBorder =
-                            XLBorderStyleValues.Thin;
-                        destinationWorksheet.Cell(currentRowIdx, columnIdx).Style.Border.RightBorder =
-                            XLBorderStyleValues.Thin;
+                        destinationWorksheet.Cell(currentRowIdx, columnIdx).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                        destinationWorksheet.Cell(currentRowIdx, columnIdx).Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                        destinationWorksheet.Cell(currentRowIdx, columnIdx).Style.Border.LeftBorder = XLBorderStyleValues.Thin;
+                        destinationWorksheet.Cell(currentRowIdx, columnIdx).Style.Border.RightBorder = XLBorderStyleValues.Thin;
 
-                        // Alternance de couleurs pour les lignes
                         if (currentRowIdx % 2 == 0)
-                            destinationWorksheet.Cell(currentRowIdx, columnIdx).Style.Fill.BackgroundColor =
-                                XLColor.FromHtml("#ffffff");
+                            destinationWorksheet.Cell(currentRowIdx, columnIdx).Style.Fill.BackgroundColor = XLColor.FromHtml("#ffffff");
                         else
-                            destinationWorksheet.Cell(currentRowIdx, columnIdx).Style.Fill.BackgroundColor =
-                                XLColor.FromHtml("#b8b8b8");
+                            destinationWorksheet.Cell(currentRowIdx, columnIdx).Style.Fill.BackgroundColor = XLColor.FromHtml("#b8b8b8");
 
-                        // Bordure inférieure pour la dernière ligne
                         if (row == lastRow)
-                            destinationWorksheet.Cell(currentRowIdx, columnIdx).Style.Border.BottomBorder =
-                                XLBorderStyleValues.Thin;
+                            destinationWorksheet.Cell(currentRowIdx, columnIdx).Style.Border.BottomBorder = XLBorderStyleValues.Thin;
                     }
-
                     columnIdx++;
                 }
             }
 
-            // Ajuster la largeur des colonnes
             destinationWorksheet.Columns().AdjustToContents();
 
             string destinationFilePath;
             if (rowsList[1].Cell(1).Value.ToString() == "OK")
-                destinationFilePath = Path.Combine(destinationPath,
-                    $"Facture_Ezytail_{trigram}_{invoiceMonth}_{invoiceYear}.xlsx");
+                destinationFilePath = Path.Combine(destinationPath, $"Facture_Ezytail_{trigram}_{invoiceMonth}_{invoiceYear}.xlsx");
             else
-                destinationFilePath =
-                    Path.Combine(destinationPath, $"ResumeKO_{trigram}_{invoiceMonth}_{invoiceYear}.xlsx");
+                destinationFilePath = Path.Combine(destinationPath, $"ResumeKO_{trigram}_{invoiceMonth}_{invoiceYear}.xlsx");
 
             destinationWorkbook.SaveAs(destinationFilePath);
             Console.WriteLine($"Fichier créé : {destinationFilePath}");

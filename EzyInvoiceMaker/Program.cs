@@ -22,13 +22,16 @@ class Program
             string sourceFilePath = fileManager.GetExcelSource(sourceFolderPath);
             Console.WriteLine($"Fichier source : {sourceFilePath}");
             
-            // Saisie des données
-            Console.WriteLine("Pour quelle annee souhaitez vous faire le traitement ?");
-            //string invoiceYear = Console.ReadLine();
+#if DEBUG
             string invoiceYear = "2025";
-            Console.WriteLine("Pour quel mois souhaitez vous faire le traitement ?");
-            //string invoiceMonth = Console.ReadLine();
             string invoiceMonth = "3";
+            Console.WriteLine($"Mode DEBUG: Utilisation de valeurs prédéfinies avec Année: {invoiceYear}, Mois: {invoiceMonth}");
+#else
+            Console.WriteLine("Pour quelle année souhaitez vous faire le traitement ?");
+            string invoiceYear = Console.ReadLine();
+            Console.WriteLine("Pour quel mois souhaitez vous faire le traitement ?");
+            string invoiceMonth = Console.ReadLine();
+#endif
             
             // Traitement en une seule lecture du fichier
             using (var excelWorkbook = new XLWorkbook(sourceFilePath))
@@ -53,6 +56,11 @@ class Program
                     excelProcessor.CreateExcelFile(destinationFolderPath, rowsWithHeader, invoiceMonth, invoiceYear, trigram);
                 }
             }
+            Console.WriteLine("Traitement terminé avec succès.");
+#if RELEASE
+            Console.WriteLine("Appuyez sur une touche pour quitter...");
+            Console.ReadKey();
+#endif
         }
         catch (Exception ex)
         {
