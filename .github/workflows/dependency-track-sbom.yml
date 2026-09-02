@@ -1,0 +1,46 @@
+name: Dependency-Track SBOM
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch: {}
+
+jobs:
+  sbom:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Install CycloneDX SBOM generator
+        run: dotnet tool install --global CycloneDX
+
+      - name: Generate SBOM (CycloneDX)
+        run: |
+          export PATH="$PATH:$HOME/.dotnet/tools"
+          dotnet-CycloneDX EzyInvoiceMaker/EzyInvoiceMaker.csproj -o . -F Json -fn bom.json
+
+      - name: Upload SBOM to Dependency-Track
+        env:
+          DTRACK_URL: ${{ secrets.DTRACK_URL }}       # ex: https://dtrack.tondomaine.com
+          DTRACK_API_KEY: ${{ secrets.DTRACK_API_KEY }}
+          DTRACK_PROJECT_UUID: ${{ secrets.DTRACK_PROJECT_UUID }}
+        run: |
+          BOM_BASE64=$(base64 -w 0 bom.json)
+          # Write the payload to a file: the base64-encoded BOM is too large to
+          # pass on the command line (curl: Argument list too long).
+          printf '{"project": "%s", "bom": "%s"}' "$DTRACK_PROJECT_UUID" "$BOM_BASE64" > dtrack-payload.json
+          curl -s -X POST "$DTRACK_URL/api/v1/bom" \
+            -H "X-Api-Key: $DTRACK_API_KEY" \
+            -H "Content-Type: application/json" \
+            --data @dtrack-payload.json
