@@ -30,17 +30,34 @@ jobs:
           export PATH="$PATH:$HOME/.dotnet/tools"
           dotnet-CycloneDX EzyInvoiceMaker/EzyInvoiceMaker.csproj -o . -F Json -fn bom.json
 
-      - name: Upload SBOM to Dependency-Track
+      # The official action takes serverhostname/protocol/port separately,
+      # while the DTRACK_URL secret is a full URL. Derive the pieces from it
+      # so no new secret is required.
+      - name: Parse Dependency-Track URL
         env:
           DTRACK_URL: ${{ secrets.DTRACK_URL }}       # ex: https://dtrack.tondomaine.com
-          DTRACK_API_KEY: ${{ secrets.DTRACK_API_KEY }}
-          DTRACK_PROJECT_UUID: ${{ secrets.DTRACK_PROJECT_UUID }}
         run: |
-          BOM_BASE64=$(base64 -w 0 bom.json)
-          # Write the payload to a file: the base64-encoded BOM is too large to
-          # pass on the command line (curl: Argument list too long).
-          printf '{"project": "%s", "bom": "%s"}' "$DTRACK_PROJECT_UUID" "$BOM_BASE64" > dtrack-payload.json
-          curl -s -X POST "$DTRACK_URL/api/v1/bom" \
-            -H "X-Api-Key: $DTRACK_API_KEY" \
-            -H "Content-Type: application/json" \
-            --data @dtrack-payload.json
+          protocol="${DTRACK_URL%%://*}"
+          rest="${DTRACK_URL#*://}"
+          hostport="${rest%%/*}"
+          host="${hostport%%:*}"
+          port="${hostport##*:}"
+          if [ "$port" = "$hostport" ]; then
+            # No explicit port in the URL; pick the default for the scheme.
+            if [ "$protocol" = "http" ]; then port=80; else port=443; fi
+          fi
+          {
+            echo "DTRACK_PROTOCOL=$protocol"
+            echo "DTRACK_HOSTNAME=$host"
+            echo "DTRACK_PORT=$port"
+          } >> "$GITHUB_ENV"
+
+      - name: Upload SBOM to Dependency-Track
+        uses: DependencyTrack/gh-upload-sbom@v3
+        with:
+          serverhostname: ${{ env.DTRACK_HOSTNAME }}
+          protocol: ${{ env.DTRACK_PROTOCOL }}
+          port: ${{ env.DTRACK_PORT }}
+          apikey: ${{ secrets.DTRACK_API_KEY }}
+          project: ${{ secrets.DTRACK_PROJECT_UUID }}
+          bomfilename: bom.json
