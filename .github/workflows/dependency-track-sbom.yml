@@ -27,6 +27,7 @@ jobs:
 
       - name: Generate SBOM (CycloneDX)
         run: |
+          export PATH="$PATH:$HOME/.dotnet/tools"
           dotnet-CycloneDX . -o . -f json --json
 
       - name: Upload SBOM to Dependency-Track
