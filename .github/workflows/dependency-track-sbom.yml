@@ -37,7 +37,10 @@ jobs:
           DTRACK_PROJECT_UUID: ${{ secrets.DTRACK_PROJECT_UUID }}
         run: |
           BOM_BASE64=$(base64 -w 0 bom.json)
+          # Write the payload to a file: the base64-encoded BOM is too large to
+          # pass on the command line (curl: Argument list too long).
+          printf '{"project": "%s", "bom": "%s"}' "$DTRACK_PROJECT_UUID" "$BOM_BASE64" > dtrack-payload.json
           curl -s -X POST "$DTRACK_URL/api/v1/bom" \
             -H "X-Api-Key: $DTRACK_API_KEY" \
             -H "Content-Type: application/json" \
-            -d "{\"project\": \"$DTRACK_PROJECT_UUID\", \"bom\": \"$BOM_BASE64\"}"
+            --data @dtrack-payload.json
